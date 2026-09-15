@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments (machine-specific, huge)
+.venv/
+venv/
+env/
+ENV/
+
+# Secrets, credentials, and confidential configs
+.env
+.env.*
+*.env
+credentials.json
+auth.json
+secrets.json
+config.local.json
+*.token
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+*.crt
+*.keystore
+
+# Editor & AI agent tooling
+.claude/
+.agents/
+.cursor/
+.kilo/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+/promo
+
+# PyInstaller & build outputs
+build/
+dist/
+dist-*/
+release/
+out/
+*.spec.bak
+
+# Electron & Node build output
+node_modules/
+dist-app/
+dist-electron/
+dist-package/
+
+# Local speech models & downloaded weight caches
+models/
+downloads/
+cache/
+*.bin
+*.onnx
+*.xml
+*.bin.gz
+
+# Runtime logs, crash dumps, and debug artifacts
+*.log
+logs/
+*.dmp
+crash.dmp
+debug.txt
+
+# Generated test artifacts & audio dumps
+test/
+tests/
+temp_audio/
+recordings/
+*.tmp
+
+# Documentation private / internal files & verification tokens (not for GitHub)
+docs/_*.png
+docs/*.txt
+docs/drafts/
+docs/private/
+docs/tmp/
+LAUNCH.md
+
+# Operating System files
+Thumbs.db
+desktop.ini
+.DS_Store
+$RECYCLE.BIN/
+*.lnk
+
