@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+; Hush — Autostart Configuration
+; Registers Hush to launch minimized in the system tray upon Windows login.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
+"Hush"="\"%LOCALAPPDATA%\\Programs\\Hush\\Hush.exe\" --minimized"
