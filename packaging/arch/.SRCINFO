@@ -1,0 +1,19 @@
+pkgbase = hush
+	pkgdesc = Free, private, local dictation — hold a hotkey, speak, and text is typed at your cursor (offline Whisper via OpenVINO)
+	pkgver = 1.0.0
+	pkgrel = 1
+	url = https://github.com/yashavsarmal30/hush
+	install = hush.install
+	arch = x86_64
+	license = MIT
+	makedepends = python-pip
+	depends = python
+	depends = portaudio
+	depends = xdotool
+	depends = wtype
+	depends = wl-clipboard
+	optdepends = ydotool: text-injection fallback for GNOME-Wayland (needs ydotoold + /dev/uinput)
+	source = hush-1.0.0.tar.gz::https://github.com/yashavsarmal30/hush/archive/refs/tags/v1.0.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = hush
