@@ -1,0 +1,40 @@
+{
+  "appId": "com.yashavsarmal.hush",
+  "productName": "Hush",
+  "directories": {
+    "output": "dist-package"
+  },
+  "files": [
+    "dist-app/**/*",
+    "dist-electron/**/*",
+    "package.json",
+    "public/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "dist/Hush",
+      "to": "engine",
+      "filter": ["**/*"]
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build_assets/hush.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Hush"
+  }
+}
