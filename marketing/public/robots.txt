@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yashavsarmal30.github.io/hush/sitemap.xml
