@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { DictationState, EngineState } from "@/types/hush";
+import appLogo from "@/assets/icon.png";
 
 interface HeaderProps {
   state: DictationState;
@@ -71,7 +72,7 @@ export function Header({
     } else {
       setTimeout(() => {
         setCheckingUpdate(false);
-        toast.info("Hush is up to date (v1.0.1)");
+        toast.info("Hush is up to date (v1.0.2)");
       }, 800);
     }
   };
@@ -93,7 +94,7 @@ export function Header({
       {/* Brand & Logo */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shadow-sm flex items-center justify-center bg-neutral-900">
-          <img src="/icon.png" alt="Hush" className="w-7 h-7 object-contain" />
+          <img src={appLogo} alt="Hush" className="w-7 h-7 object-contain" />
         </div>
         <div>
           <div className="flex items-center gap-2">

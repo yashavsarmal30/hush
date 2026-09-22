@@ -74,7 +74,7 @@ export function PreferencesTab({
     } else {
       setTimeout(() => {
         setCheckingUpdate(false);
-        toast.info("Hush is up to date (v1.0.1)");
+        toast.info("Hush is up to date (v1.0.2)");
       }, 800);
     }
   };
@@ -293,7 +293,7 @@ export function PreferencesTab({
         <div>
           <p className="text-xs font-semibold text-white">Software Updates</p>
           <p className="text-[11px] text-neutral-400">
-            Hush automatically checks for updates on launch. Current version: v1.0.1.
+            Hush automatically checks for updates on launch. Current version: v1.0.2.
           </p>
         </div>
 
