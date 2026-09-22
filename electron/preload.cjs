@@ -19,4 +19,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onEngineError: (callback) => {
     ipcRenderer.on("engine:error", (_event, err) => callback(err));
   },
+  onUpdateNotAvailable: (callback) => {
+    ipcRenderer.on("update:not-available", () => callback());
+  },
+  onUpdateError: (callback) => {
+    ipcRenderer.on("update:error", (_event, err) => callback(err));
+  },
 });

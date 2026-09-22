@@ -348,7 +348,15 @@ ipcMain.on("set:autostart", (_event, enabled: boolean) => {
 });
 
 ipcMain.on("update:check", () => {
-  if (!isDev) autoUpdater.checkForUpdates().catch(() => {});
+  if (!isDev) {
+    autoUpdater.checkForUpdates().catch((err: any) => {
+      mainWindow?.webContents.send("update:error", err?.message || String(err));
+    });
+  } else {
+    setTimeout(() => {
+      mainWindow?.webContents.send("update:not-available");
+    }, 800);
+  }
 });
 
 ipcMain.on("update:install", () => {
@@ -370,11 +378,17 @@ app.whenReady().then(() => {
   if (!isDev) {
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
-    autoUpdater.on("update-available", (info) => {
+    autoUpdater.on("update-available", (info: any) => {
       mainWindow?.webContents.send("update:available", info.version);
     });
-    autoUpdater.on("update-downloaded", (info) => {
+    autoUpdater.on("update-downloaded", (info: any) => {
       mainWindow?.webContents.send("update:downloaded", info.version);
+    });
+    autoUpdater.on("update-not-available", () => {
+      mainWindow?.webContents.send("update:not-available");
+    });
+    autoUpdater.on("error", (err: any) => {
+      mainWindow?.webContents.send("update:error", err?.message || String(err));
     });
     setTimeout(() => {
       autoUpdater.checkForUpdates().catch(() => {});

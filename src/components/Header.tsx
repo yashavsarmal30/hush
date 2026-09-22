@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Mic, Radio, Minus, Square, X, Volume2, ShieldCheck, Download } from "lucide-react";
+import { Mic, Radio, Minus, Square, X, Volume2, ShieldCheck, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { DictationState, EngineState } from "@/types/hush";
 
@@ -30,21 +31,50 @@ export function Header({
 }: HeaderProps) {
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   useEffect(() => {
     const api = (window as any).electronAPI;
     if (api?.onUpdateAvailable) {
       api.onUpdateAvailable((version: string) => {
         setUpdateVersion(version);
+        setCheckingUpdate(false);
       });
     }
     if (api?.onUpdateDownloaded) {
       api.onUpdateDownloaded((version: string) => {
         setUpdateVersion(version);
         setUpdateReady(true);
+        setCheckingUpdate(false);
+        toast.success(`Update v${version} downloaded! Click Install Update to apply.`);
+      });
+    }
+    if (api?.onUpdateNotAvailable) {
+      api.onUpdateNotAvailable(() => {
+        setCheckingUpdate(false);
+        toast.info("Hush is up to date (v1.0.1)");
+      });
+    }
+    if (api?.onUpdateError) {
+      api.onUpdateError((err: string) => {
+        setCheckingUpdate(false);
       });
     }
   }, []);
+
+  const handleCheckUpdate = () => {
+    setCheckingUpdate(true);
+    toast.info("Checking for updates…");
+    const api = (window as any).electronAPI;
+    if (api?.checkUpdate) {
+      api.checkUpdate();
+    } else {
+      setTimeout(() => {
+        setCheckingUpdate(false);
+        toast.info("Hush is up to date (v1.0.1)");
+      }, 800);
+    }
+  };
 
   const handleInstallUpdate = () => {
     (window as any).electronAPI?.installUpdate?.();
@@ -169,7 +199,19 @@ export function Header({
             <Download className="w-3 h-3 animate-bounce" />
             <span>Downloading v{updateVersion}…</span>
           </div>
-        ) : null}
+        ) : (
+          <Button
+            onClick={handleCheckUpdate}
+            size="sm"
+            variant="outline"
+            disabled={checkingUpdate}
+            className="relative z-10 cursor-pointer border-white/10 hover:border-white/20 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium px-3 py-1 rounded-full gap-1.5 transition-all shadow-sm"
+            title="Check for updates / Install latest update"
+          >
+            <RefreshCw className={cn("w-3 h-3", checkingUpdate && "animate-spin")} />
+            <span>{checkingUpdate ? "Checking…" : "Check for Updates"}</span>
+          </Button>
+        )}
 
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-medium border border-emerald-500/20 mr-2">
           <ShieldCheck className="w-3.5 h-3.5" />

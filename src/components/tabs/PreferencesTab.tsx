@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Mic, Volume2, Play, Sliders, FolderOpen, RotateCcw, Power, Check } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Mic, Volume2, Play, Sliders, FolderOpen, RotateCcw, Power, Check, Download, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,10 @@ export function PreferencesTab({
   onStopMeter,
   onPlaySound,
 }: PreferencesTabProps) {
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [updateReady, setUpdateReady] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
   // Start mic meter while preferences tab is mounted
   useEffect(() => {
     onStartMeter();
@@ -33,6 +37,51 @@ export function PreferencesTab({
       onStopMeter();
     };
   }, [onStartMeter, onStopMeter]);
+
+  useEffect(() => {
+    const api = (window as any).electronAPI;
+    if (api?.onUpdateAvailable) {
+      api.onUpdateAvailable((version: string) => {
+        setUpdateVersion(version);
+        setCheckingUpdate(false);
+      });
+    }
+    if (api?.onUpdateDownloaded) {
+      api.onUpdateDownloaded((version: string) => {
+        setUpdateVersion(version);
+        setUpdateReady(true);
+        setCheckingUpdate(false);
+      });
+    }
+    if (api?.onUpdateNotAvailable) {
+      api.onUpdateNotAvailable(() => {
+        setCheckingUpdate(false);
+      });
+    }
+    if (api?.onUpdateError) {
+      api.onUpdateError(() => {
+        setCheckingUpdate(false);
+      });
+    }
+  }, []);
+
+  const handleCheckUpdate = () => {
+    setCheckingUpdate(true);
+    toast.info("Checking for updates…");
+    const api = (window as any).electronAPI;
+    if (api?.checkUpdate) {
+      api.checkUpdate();
+    } else {
+      setTimeout(() => {
+        setCheckingUpdate(false);
+        toast.info("Hush is up to date (v1.0.1)");
+      }, 800);
+    }
+  };
+
+  const handleInstallUpdate = () => {
+    (window as any).electronAPI?.installUpdate?.();
+  };
 
   const handleOpenDataDir = () => {
     (window as any).electronAPI?.openDataFolder();
@@ -236,6 +285,45 @@ export function PreferencesTab({
               (window as any).electronAPI?.setAutostart?.(v);
             }}
           />
+        </div>
+      </Card>
+
+      {/* Software Updates Card */}
+      <Card className="p-4 bg-neutral-900/60 border-white/5 rounded-2xl flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-white">Software Updates</p>
+          <p className="text-[11px] text-neutral-400">
+            Hush automatically checks for updates on launch. Current version: v1.0.1.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {updateReady ? (
+            <Button
+              size="sm"
+              onClick={handleInstallUpdate}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 text-xs rounded-full font-semibold shadow-md animate-pulse cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Install Update Now</span>
+            </Button>
+          ) : updateVersion ? (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-medium border border-blue-500/30">
+              <Download className="w-3.5 h-3.5 animate-bounce" />
+              <span>Downloading v{updateVersion}…</span>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCheckUpdate}
+              disabled={checkingUpdate}
+              className="gap-2 text-xs rounded-full border-white/10 hover:bg-neutral-800 cursor-pointer"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", checkingUpdate && "animate-spin")} />
+              <span>{checkingUpdate ? "Checking…" : "Check for Updates"}</span>
+            </Button>
+          )}
         </div>
       </Card>
 
