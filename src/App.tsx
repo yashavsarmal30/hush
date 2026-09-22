@@ -2,30 +2,26 @@ import React, { useState, useEffect } from "react";
 import { useHush } from "@/hooks/useHush";
 import { OverlayPill } from "@/components/OverlayPill";
 import { MainHub } from "@/components/MainHub";
-import DemoOne from "@/components/demo";
 
-function getRoute(): "overlay" | "demo" | "main" {
+function isOverlay(): boolean {
   if (typeof window !== "undefined") {
     const hash = window.location.hash;
     const search = window.location.search;
-    if (
+    return (
       hash === "#overlay" ||
       search.includes("window=overlay") ||
       (window.innerWidth > 0 && window.innerWidth <= 450 && window.innerHeight <= 120)
-    ) {
-      return "overlay";
-    }
-    if (hash === "#demo" || window.location.pathname.endsWith("/demo")) return "demo";
+    );
   }
-  return "main";
+  return false;
 }
 
 export function App() {
   const hush = useHush();
-  const [route, setRoute] = useState<"overlay" | "demo" | "main">(getRoute);
+  const [overlay, setOverlay] = useState<boolean>(isOverlay);
 
   useEffect(() => {
-    const onRoute = () => setRoute(getRoute());
+    const onRoute = () => setOverlay(isOverlay());
     window.addEventListener("hashchange", onRoute);
     window.addEventListener("popstate", onRoute);
     return () => {
@@ -38,7 +34,7 @@ export function App() {
     (window as any).electronAPI?.showMainWindow?.();
   };
 
-  if (route === "overlay") {
+  if (overlay) {
     return (
       <div className="w-screen h-screen flex items-center justify-center p-0 m-0 overflow-hidden bg-transparent select-none">
         <OverlayPill
@@ -55,10 +51,6 @@ export function App() {
         />
       </div>
     );
-  }
-
-  if (route === "demo") {
-    return <DemoOne />;
   }
 
   return (

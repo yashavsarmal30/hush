@@ -117,13 +117,6 @@ export function Header({
 
       {/* Right controls: Privacy badge + Window controls */}
       <div className="flex items-center gap-2 non-draggable-region">
-        <a
-          href="#demo"
-          className="relative z-10 cursor-pointer px-2.5 py-1 rounded-full bg-neutral-900 text-neutral-400 hover:text-white text-[11px] font-medium border border-white/5 transition-colors"
-          title="View Landing & ASCII Demo"
-        >
-          Demo
-        </a>
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-medium border border-emerald-500/20 mr-2">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>Private</span>

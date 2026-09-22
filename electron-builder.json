@@ -10,6 +10,13 @@
     "package.json",
     "public/**/*"
   ],
+  "extraResources": [
+    {
+      "from": "hush",
+      "to": "hush",
+      "filter": ["**/*"]
+    }
+  ],
   "win": {
     "target": [
       {

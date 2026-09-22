@@ -82,11 +82,17 @@ function findPython(): { cmd: string; args: string[] } {
 function startPythonService() {
   const root = getAppRoot();
   const py = findPython();
+  const serviceCwd = isDev ? root : process.resourcesPath;
+  const env = {
+    ...process.env,
+    PYTHONPATH: isDev ? root : process.resourcesPath,
+  };
 
-  console.log(`[Hush] Launching Python backend: ${py.cmd} ${py.args.join(" ")}`);
+  console.log(`[Hush] Launching Python backend: ${py.cmd} ${py.args.join(" ")} (cwd: ${serviceCwd})`);
   try {
     pythonProcess = spawn(py.cmd, py.args, {
-      cwd: root,
+      cwd: serviceCwd,
+      env,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -125,7 +131,7 @@ function createMainWindow() {
     icon: getAppIconPath(),
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -181,7 +187,7 @@ function createOverlayWindow() {
     icon: getAppIconPath(),
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
     },
