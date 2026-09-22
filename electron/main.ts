@@ -27,6 +27,8 @@ let pythonProcess: ChildProcess | null = null;
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
 
+app.commandLine.appendSwitch("wm-window-animations-disabled");
+
 // Ensure single instance
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -204,10 +206,10 @@ function createOverlayWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
-  const overlayWidth = 340;
-  const overlayHeight = 56;
+  const overlayWidth = 400;
+  const overlayHeight = 76;
   const x = Math.round((width - overlayWidth) / 2);
-  const y = Math.round(height - overlayHeight - 24);
+  const y = Math.round(height - overlayHeight - 20);
 
   overlayWindow = new BrowserWindow({
     width: overlayWidth,

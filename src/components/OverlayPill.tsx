@@ -79,7 +79,7 @@ export function OverlayPill({
     <div className="flex items-center justify-center p-0 m-0 select-none bg-transparent">
       <div
         className={cn(
-          "glass-pill draggable-region flex items-center gap-3 px-3.5 py-1.5 rounded-full transition-all duration-200 ease-out shadow-2xl",
+          "glass-pill draggable-region flex items-center gap-3 px-3.5 py-1.5 rounded-full transition-all duration-200 ease-out",
           state === "listening" && "border-red-500/30 bg-[#131316]",
           state === "error" && "border-red-500/40",
           state === "inserted" && "border-emerald-500/40"
@@ -108,14 +108,12 @@ export function OverlayPill({
               <div className="flex items-center gap-1.5 pl-1 animate-in fade-in">
                 <button
                   onClick={onStop}
-                  title="Finish dictation"
                   className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black hover:bg-neutral-200 transition-transform active:scale-95 shadow-sm"
                 >
                   <Square className="w-2 h-2 fill-black" />
                 </button>
                 <button
                   onClick={onCancel}
-                  title="Cancel dictation"
                   className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
                 >
                   <X className="w-3 h-3" />
@@ -163,7 +161,6 @@ export function OverlayPill({
             <button
               onClick={onStart}
               className="flex items-center gap-2 px-1 hover:opacity-90 transition-opacity cursor-pointer"
-              title="Click to dictate (or use hotkey)"
             >
               <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white">
                 <Mic className="w-3 h-3 text-white" />
@@ -183,7 +180,6 @@ export function OverlayPill({
                     ? "text-emerald-400 bg-emerald-500/20"
                     : "text-neutral-400 hover:text-white"
                 )}
-                title={handsFreeMode ? "Hands-free active" : "Enable hands-free"}
               >
                 <Sparkles className="w-3 h-3" />
               </button>
@@ -194,7 +190,6 @@ export function OverlayPill({
               <button
                 onClick={onOpenMain}
                 className="text-neutral-400 hover:text-white p-1 transition-colors cursor-pointer"
-                title="Open Dashboard"
               >
                 <ExternalLink className="w-3 h-3" />
               </button>
