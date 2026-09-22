@@ -12,7 +12,9 @@ import path from "path";
 import { spawn, ChildProcess } from "child_process";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { autoUpdater } from "electron-updater";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const { autoUpdater } = require("electron-updater");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
