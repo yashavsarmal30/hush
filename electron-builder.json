@@ -12,6 +12,11 @@
   ],
   "extraResources": [
     {
+      "from": "dist/hush-engine",
+      "to": "engine",
+      "filter": ["**/*"]
+    },
+    {
       "from": "hush",
       "to": "hush",
       "filter": ["**/*"]

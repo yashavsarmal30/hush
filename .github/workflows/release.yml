@@ -43,6 +43,9 @@ jobs:
       - name: Build React frontend & Electron TypeScript
         run: npm run build:all
 
+      - name: Build standalone Python engine with PyInstaller
+        run: pyinstaller packaging/engine/engine.spec --noconfirm
+
       - name: Build & Package Windows Release (electron-builder)
         run: npx electron-builder --win
         env:

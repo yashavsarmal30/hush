@@ -56,7 +56,7 @@ process.on("uncaughtException", (err) => {
   console.error("[Hush] Uncaught exception in main process:", err);
 });
 
-function findPython(): { cmd: string; args: string[] } {
+function findPython(): { cmd: string; args: string[]; cwd?: string } {
   const root = getAppRoot();
   const engineCandidates = [
     path.join(process.resourcesPath, "engine", "hush-engine.exe"),
@@ -65,24 +65,24 @@ function findPython(): { cmd: string; args: string[] } {
     path.join(root, "hush-engine.exe"),
   ];
   const engine = engineCandidates.find((c) => fs.existsSync(c));
-  if (engine) return { cmd: engine, args: [] };
+  if (engine) return { cmd: engine, args: [], cwd: path.dirname(engine) };
 
   const venv = path.join(root, ".venv", "Scripts", "python.exe");
-  if (fs.existsSync(venv)) return { cmd: venv, args: ["-m", "hush.service"] };
+  if (fs.existsSync(venv)) return { cmd: venv, args: ["-m", "hush.service"], cwd: root };
 
   const localApp = process.env.LOCALAPPDATA || "";
   for (const v of ["Python313", "Python312", "Python311", "Python310"]) {
     const p = path.join(localApp, "Programs", "Python", v, "python.exe");
-    if (fs.existsSync(p)) return { cmd: p, args: ["-m", "hush.service"] };
+    if (fs.existsSync(p)) return { cmd: p, args: ["-m", "hush.service"], cwd: isDev ? root : process.resourcesPath };
   }
 
-  return { cmd: "python", args: ["-m", "hush.service"] };
+  return { cmd: "python", args: ["-m", "hush.service"], cwd: isDev ? root : process.resourcesPath };
 }
 
 function startPythonService() {
   const root = getAppRoot();
   const py = findPython();
-  const serviceCwd = isDev ? root : process.resourcesPath;
+  const serviceCwd = py.cwd || (isDev ? root : process.resourcesPath);
   const env = {
     ...process.env,
     PYTHONPATH: isDev ? root : process.resourcesPath,
