@@ -12,7 +12,7 @@
     "build:all": "npm run build && npm run build:electron",
     "start": "electron .",
     "app": "concurrently -k \"vite\" \"npm run build:electron && electron .\"",
-    "package:win": "npm run build:all && electron-builder --win"
+    "package:win": "npm run build:all && npm run build:engine && electron-builder --win"
   },
   "keywords": [
     "dictation",

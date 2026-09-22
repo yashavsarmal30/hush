@@ -61,15 +61,24 @@ function findPython(): { cmd: string; args: string[]; cwd?: string } {
   const root = getAppRoot();
   const engineCandidates = [
     path.join(process.resourcesPath, "engine", "hush-engine.exe"),
+    path.join(process.resourcesPath, "engine", "Hush.exe"),
     path.join(process.resourcesPath, "hush-engine.exe"),
+    path.join(process.resourcesPath, "Hush.exe"),
     path.join(root, "dist", "hush-engine", "hush-engine.exe"),
+    path.join(root, "dist", "hush-engine", "Hush.exe"),
+    path.join(root, "dist", "Hush", "Hush.exe"),
     path.join(root, "hush-engine.exe"),
+    path.join(root, "Hush.exe"),
   ];
   const engine = engineCandidates.find((c) => fs.existsSync(c));
   if (engine) return { cmd: engine, args: [], cwd: path.dirname(engine) };
 
-  const venv = path.join(root, ".venv", "Scripts", "python.exe");
-  if (fs.existsSync(venv)) return { cmd: venv, args: ["-m", "hush.service"], cwd: root };
+  const venvCandidates = [
+    path.join(root, ".venv", "Scripts", "python.exe"),
+    path.join(process.resourcesPath, ".venv", "Scripts", "python.exe"),
+  ];
+  const venv = venvCandidates.find((c) => fs.existsSync(c));
+  if (venv) return { cmd: venv, args: ["-m", "hush.service"], cwd: root };
 
   const localApp = process.env.LOCALAPPDATA || "";
   for (const v of ["Python313", "Python312", "Python311", "Python310"]) {
@@ -77,10 +86,28 @@ function findPython(): { cmd: string; args: string[]; cwd?: string } {
     if (fs.existsSync(p)) return { cmd: p, args: ["-m", "hush.service"], cwd: isDev ? root : process.resourcesPath };
   }
 
+  for (const v of ["Python313", "Python312", "Python311", "Python310"]) {
+    const p = path.join("C:\\", v, "python.exe");
+    if (fs.existsSync(p)) return { cmd: p, args: ["-m", "hush.service"], cwd: isDev ? root : process.resourcesPath };
+  }
+
+  const winDir = process.env.WINDIR || "C:\\Windows";
+  const pyLauncher = path.join(winDir, "py.exe");
+  if (fs.existsSync(pyLauncher)) {
+    return { cmd: pyLauncher, args: ["-3", "-m", "hush.service"], cwd: isDev ? root : process.resourcesPath };
+  }
+
   return { cmd: "python", args: ["-m", "hush.service"], cwd: isDev ? root : process.resourcesPath };
 }
 
 function startPythonService() {
+  if (pythonProcess) {
+    try {
+      pythonProcess.kill("SIGTERM");
+    } catch {}
+    pythonProcess = null;
+  }
+
   const root = getAppRoot();
   const py = findPython();
   const serviceCwd = py.cwd || (isDev ? root : process.resourcesPath);
@@ -101,6 +128,8 @@ function startPythonService() {
     pythonProcess.on("error", (err) => {
       console.error("[Hush] Python process error:", err.message);
       pythonProcess = null;
+      mainWindow?.webContents.send("engine:error", err.message);
+      overlayWindow?.webContents.send("engine:error", err.message);
     });
 
     pythonProcess.stdout?.on("data", (data) => {
@@ -115,9 +144,15 @@ function startPythonService() {
     pythonProcess.on("close", (code) => {
       console.log(`[Python] exited with code ${code}`);
       pythonProcess = null;
+      if (!isQuitting) {
+        mainWindow?.webContents.send("engine:error", `Engine stopped (code ${code})`);
+        overlayWindow?.webContents.send("engine:error", `Engine stopped (code ${code})`);
+      }
     });
   } catch (err: any) {
     console.error("[Hush] Failed to spawn Python service:", err.message);
+    mainWindow?.webContents.send("engine:error", err.message);
+    overlayWindow?.webContents.send("engine:error", err.message);
   }
 }
 
@@ -178,6 +213,7 @@ function createOverlayWindow() {
     x,
     y,
     frame: false,
+    thickFrame: false,
     transparent: true,
     backgroundColor: "#00000000",
     alwaysOnTop: true,
@@ -185,6 +221,10 @@ function createOverlayWindow() {
     hasShadow: false,
     resizable: false,
     focusable: false,
+    type: "toolbar",
+    titleBarStyle: "hidden",
+    roundedCorners: false,
+    title: "",
     icon: getAppIconPath(),
     show: false,
     webPreferences: {
@@ -194,6 +234,8 @@ function createOverlayWindow() {
     },
   });
 
+  overlayWindow.setMenu(null);
+  overlayWindow.setMenuBarVisibility(false);
   overlayWindow.setAlwaysOnTop(true, "screen-saver");
 
   if (isDev) {
@@ -314,6 +356,10 @@ ipcMain.on("update:check", () => {
 
 ipcMain.on("update:install", () => {
   autoUpdater.quitAndInstall();
+});
+
+ipcMain.on("engine:restart", () => {
+  startPythonService();
 });
 
 let isQuitting = false;

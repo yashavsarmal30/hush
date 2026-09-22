@@ -442,7 +442,7 @@ class HushService:
                 },
                 "hold_chords": HOLD_CHORDS,
                 "toggle_combos": TOGGLE_COMBOS,
-                "devices": [d[1] for d in list_input_devices()],
+                "devices": (lambda: [d[1] for d in list_input_devices()] if list_input_devices else [])(),
                 "history": history.load(limit=100),
                 "stats": self.cfg.get("stats"),
                 "app_dir": APP_DIR,

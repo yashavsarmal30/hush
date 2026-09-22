@@ -32,6 +32,15 @@ const DEFAULT_CONFIG: HushConfig = {
   stats: { words: 0, utterances: 0, audio_seconds: 0.0 },
 };
 
+const DEFAULT_MODELS: Record<string, ModelDetail> = {
+  "tiny.en": { repo: "OpenVINO/whisper-tiny.en-int8-ov", size: "75 MB", note: "Fastest, lowest RAM (~300 MB), English only", downloaded: false },
+  "base.en": { repo: "OpenVINO/whisper-base.en-int8-ov", size: "140 MB", note: "Sweet spot for speed on older laptops, English only", downloaded: false },
+  "small.en": { repo: "OpenVINO/whisper-small.en-int8-ov", size: "460 MB", note: "High accuracy, English only", downloaded: false },
+  "base (multilingual)": { repo: "OpenVINO/whisper-base-int8-ov", size: "140 MB", note: "Basic multilingual + English/Hindi", downloaded: false },
+  "small (multilingual)": { repo: "OpenVINO/whisper-small-int8-ov", size: "460 MB", note: "Default — high accuracy English + Hindi", downloaded: false },
+  "large-v3-turbo (multilingual)": { repo: "OpenVINO/whisper-large-v3-turbo-int8-ov", size: "800 MB", note: "Best accuracy, best on Intel iGPU", downloaded: false },
+};
+
 export function useHush() {
   const [connected, setConnected] = useState(false);
   const [state, setState] = useState<DictationState>("idle");
@@ -40,11 +49,11 @@ export function useHush() {
   const [busy, setBusy] = useState(false);
   const [enabled, setEnabled] = useState(true);
   const [isHandsFreeSession, setIsHandsFreeSession] = useState(false);
-  const [engineState, setEngineState] = useState<EngineState>("loading");
+  const [engineState, setEngineState] = useState<EngineState>("unloaded");
   const [micLevel, setMicLevel] = useState(0.0);
   const [meterLevel, setMeterLevel] = useState(0.0);
   const [config, setConfig] = useState<HushConfig>(DEFAULT_CONFIG);
-  const [models, setModels] = useState<Record<string, ModelDetail>>({});
+  const [models, setModels] = useState<Record<string, ModelDetail>>(DEFAULT_MODELS);
   const [holdChords, setHoldChords] = useState<string[]>([]);
   const [toggleCombos, setToggleCombos] = useState<string[]>([]);
   const [devices, setDevices] = useState<string[]>([]);

@@ -15,4 +15,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onUpdateDownloaded: (callback) => {
     ipcRenderer.on("update:downloaded", (_event, version) => callback(version));
   },
+  restartEngine: () => ipcRenderer.send("engine:restart"),
+  onEngineError: (callback) => {
+    ipcRenderer.on("engine:error", (_event, err) => callback(err));
+  },
 });

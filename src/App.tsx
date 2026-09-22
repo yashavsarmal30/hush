@@ -30,6 +30,14 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (overlay) {
+      document.title = "";
+    } else {
+      document.title = "Hush";
+    }
+  }, [overlay]);
+
   const handleOpenMainFromOverlay = () => {
     (window as any).electronAPI?.showMainWindow?.();
   };

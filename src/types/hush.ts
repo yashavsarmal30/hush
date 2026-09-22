@@ -1,5 +1,5 @@
 export type DictationState = "idle" | "listening" | "transcribing" | "inserted" | "error";
-export type EngineState = "unloaded" | "loading" | "ready" | "error";
+export type EngineState = "unloaded" | "loading" | "ready" | "error" | "empty";
 
 export interface SessionStats {
   words: number;

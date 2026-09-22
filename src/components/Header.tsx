@@ -78,7 +78,18 @@ export function Header({
       {/* Center status & Quick Dictate CTA */}
       <div className="flex items-center gap-3 non-draggable-region">
         {/* Engine readiness badge */}
-        <div className="flex items-center gap-2 bg-neutral-900/80 px-3 py-1 rounded-full border border-white/5">
+        <button
+          onClick={() => {
+            if (!connected) {
+              (window as any).electronAPI?.restartEngine?.();
+            }
+          }}
+          className={cn(
+            "flex items-center gap-2 bg-neutral-900/80 px-3 py-1 rounded-full border border-white/5 transition-colors",
+            !connected && "hover:bg-neutral-800 cursor-pointer"
+          )}
+          title={!connected ? "Connecting… (Click to retry engine connection)" : undefined}
+        >
           <span
             className={cn(
               "w-2 h-2 rounded-full",
@@ -88,6 +99,8 @@ export function Header({
                 ? "bg-emerald-400"
                 : engineState === "loading"
                 ? "bg-blue-400 animate-pulse"
+                : engineState === "empty" || engineState === "unloaded"
+                ? "bg-amber-400/80"
                 : "bg-red-400"
             )}
           />
@@ -98,6 +111,8 @@ export function Header({
               ? "Engine ready"
               : engineState === "loading"
               ? "Loading model…"
+              : engineState === "empty" || engineState === "unloaded"
+              ? "No model loaded"
               : "Engine error"}
           </span>
           {activeModel && (
@@ -105,7 +120,7 @@ export function Header({
               ({activeModel})
             </span>
           )}
-        </div>
+        </button>
 
         {/* Hands-Free mode toggle badge button */}
         <button
