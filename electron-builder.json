@@ -10,13 +10,6 @@
     "package.json",
     "public/**/*"
   ],
-  "extraResources": [
-    {
-      "from": "dist/Hush",
-      "to": "engine",
-      "filter": ["**/*"]
-    }
-  ],
   "win": {
     "target": [
       {

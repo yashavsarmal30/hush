@@ -156,7 +156,7 @@ export function MainHub({ hush }: MainHubProps) {
       {/* Subtle Footer Bar */}
       <footer className="px-6 py-2 border-t border-white/5 flex items-center justify-between text-[11px] text-neutral-500 bg-neutral-950/60">
         <div className="flex items-center gap-3">
-          <span>Hush v1.0.0</span>
+          <span>Hush v1.0.1</span>
           <span>·</span>
           <span>OpenVINO Whisper int8</span>
           <span>·</span>

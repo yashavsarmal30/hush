@@ -159,43 +159,33 @@ export function OverlayPill({
 
         {/* State: IDLE / STANDBY */}
         {state === "idle" && (
-          <div className="flex items-center gap-2.5 non-draggable-region">
+          <div className="flex items-center gap-2 non-draggable-region">
             <button
               onClick={onStart}
-              className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-              title="Click to dictate or use hotkey"
+              className="flex items-center gap-2 px-1 hover:opacity-90 transition-opacity cursor-pointer"
+              title="Click to dictate (or use hotkey)"
             >
               <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white">
-                <Mic className="w-3 h-3" />
+                <Mic className="w-3 h-3 text-white" />
               </div>
               <span className="text-xs font-semibold text-white tracking-wide">
                 Hush
               </span>
             </button>
 
-            {/* Hold chord chip */}
-            <div className="bg-white/10 text-neutral-300 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium">
-              {holdChord}
-            </div>
-
-            {/* Hands-Free Mode Toggle Chip */}
+            {/* Subtle hands-free toggle dot */}
             {onToggleHandsFree && (
               <button
                 onClick={onToggleHandsFree}
                 className={cn(
-                  "px-2 py-0.5 rounded-full text-[10px] font-medium transition-all flex items-center gap-1",
+                  "p-1 rounded-full text-[10px] transition-all flex items-center cursor-pointer",
                   handsFreeMode
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                    : "bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10"
+                    ? "text-emerald-400 bg-emerald-500/20"
+                    : "text-neutral-400 hover:text-white"
                 )}
-                title={
-                  handsFreeMode
-                    ? "Hands-free mode enabled (Click to switch to hold mode)"
-                    : "Switch to Hands-free mode (toggle with Stop button)"
-                }
+                title={handsFreeMode ? "Hands-free active" : "Enable hands-free"}
               >
-                <Sparkles className="w-2.5 h-2.5" />
-                <span>{handsFreeMode ? "Hands-free" : "Hold-mode"}</span>
+                <Sparkles className="w-3 h-3" />
               </button>
             )}
 
@@ -203,10 +193,10 @@ export function OverlayPill({
             {onOpenMain && (
               <button
                 onClick={onOpenMain}
-                className="text-neutral-400 hover:text-white p-0.5 transition-colors ml-0.5"
+                className="text-neutral-400 hover:text-white p-1 transition-colors cursor-pointer"
                 title="Open Dashboard"
               >
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink className="w-3 h-3" />
               </button>
             )}
           </div>

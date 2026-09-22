@@ -89,7 +89,7 @@ export function Header({
         <button
           onClick={onToggleHandsFree}
           className={cn(
-            "px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 border",
+            "relative z-10 cursor-pointer px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 border",
             handsFreeMode
               ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
               : "bg-neutral-900/80 text-neutral-400 border-white/5 hover:text-white hover:bg-neutral-800"
@@ -106,7 +106,7 @@ export function Header({
           size="sm"
           variant={recording ? "destructive" : "default"}
           className={cn(
-            "gap-2 font-semibold shadow-pill-float transition-transform",
+            "relative z-10 cursor-pointer gap-2 font-semibold shadow-pill-float transition-transform",
             recording && "animate-pulse"
           )}
         >
@@ -117,6 +117,13 @@ export function Header({
 
       {/* Right controls: Privacy badge + Window controls */}
       <div className="flex items-center gap-2 non-draggable-region">
+        <a
+          href="#demo"
+          className="relative z-10 cursor-pointer px-2.5 py-1 rounded-full bg-neutral-900 text-neutral-400 hover:text-white text-[11px] font-medium border border-white/5 transition-colors"
+          title="View Landing & ASCII Demo"
+        >
+          Demo
+        </a>
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-medium border border-emerald-500/20 mr-2">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>Private</span>
@@ -125,14 +132,14 @@ export function Header({
         {/* Window action buttons if in Electron */}
         <button
           onClick={handleMinimize}
-          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+          className="relative z-10 cursor-pointer w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
           title="Minimize"
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleClose}
-          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-500/20 hover:text-red-400 text-neutral-400 transition-colors"
+          className="relative z-10 cursor-pointer w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-500/20 hover:text-red-400 text-neutral-400 transition-colors"
           title="Close to tray"
         >
           <X className="w-3.5 h-3.5" />

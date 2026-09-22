@@ -69,10 +69,8 @@ function startPythonService() {
     // Production packaged engine
     const candidates = [
       path.join(process.resourcesPath, "engine", "hush-engine.exe"),
-      path.join(process.resourcesPath, "engine", "Hush.exe"),
       path.join(process.resourcesPath, "hush-engine.exe"),
-      path.join(process.resourcesPath, "Hush.exe"),
-      path.join(root, "dist", "Hush", "Hush.exe"),
+      path.join(root, "dist", "hush-engine", "hush-engine.exe"),
       path.join(root, "hush-engine.exe"),
     ];
     const found = candidates.find((c) => fs.existsSync(c));
@@ -139,6 +137,12 @@ function createMainWindow() {
     mainWindow?.show();
   });
 
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  }, 1500);
+
   mainWindow.on("close", (event) => {
     // Hide to tray instead of quitting
     if (!isQuitting) {
@@ -182,11 +186,12 @@ function createOverlayWindow() {
   overlayWindow.setAlwaysOnTop(true, "screen-saver");
 
   if (isDev) {
-    overlayWindow.loadURL(`${VITE_DEV_SERVER_URL}/#overlay`);
+    overlayWindow.loadURL(`${VITE_DEV_SERVER_URL}/?window=overlay#overlay`);
   } else {
-    overlayWindow.loadURL(
-      `file://${path.join(getAppRoot(), "dist-app", "index.html")}#overlay`
-    );
+    overlayWindow.loadFile(path.join(getAppRoot(), "dist-app", "index.html"), {
+      query: { window: "overlay" },
+      hash: "overlay",
+    });
   }
 
   overlayWindow.once("ready-to-show", () => {

@@ -81,8 +81,9 @@
 .draggable-region {
   -webkit-app-region: drag;
 }
-.non-draggable-region {
-  -webkit-app-region: no-drag;
+.non-draggable-region,
+.non-draggable-region * {
+  -webkit-app-region: no-drag !important;
 }
 
 /* Floating overlay glassmorphic background */
