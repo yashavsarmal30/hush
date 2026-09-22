@@ -87,10 +87,17 @@ class HushService:
 
     def _warm_mic(self):
         def work():
-            try:
-                self.recorder.open(resolve_device(self.cfg.get("input_device")))
-            except Exception as e:
-                log.error("mic warm-open failed: %s", e)
+            time.sleep(0.35)
+            for attempt in range(3):
+                try:
+                    dev = resolve_device(self.cfg.get("input_device"))
+                    self.recorder.open(dev)
+                    if self.recorder.ready:
+                        log.info("mic warm-open succeeded on attempt %d (device=%s)", attempt + 1, dev)
+                        break
+                except Exception as e:
+                    log.warning("mic warm-open attempt %d failed: %s", attempt + 1, e)
+                    time.sleep(0.4)
         threading.Thread(target=work, name="mic-warm", daemon=True).start()
 
     # --- WebSocket Event Dispatching ---
@@ -159,11 +166,29 @@ class HushService:
             msg = "Model still loading…" if self.engine.state == "loading" else "No model ready — check Models"
             self._set_state("error", msg)
             return
-        try:
-            self.recorder.begin(resolve_device(self.cfg.get("input_device")))
-        except Exception as e:
-            log.error("mic open failed: %s", e)
+
+        opened = False
+        last_err = None
+        dev = resolve_device(self.cfg.get("input_device"))
+        for attempt in range(3):
+            try:
+                self.recorder.begin(dev)
+                opened = True
+                break
+            except Exception as e:
+                last_err = e
+                log.warning("mic begin attempt %d failed: %s", attempt + 1, e)
+                dev = None  # Fallback to system default on subsequent attempt
+                time.sleep(0.12)
+
+        if not opened:
+            log.error("All mic begin attempts failed: %s", last_err)
             self._set_state("error", "Microphone unavailable")
+            def _auto_clear():
+                time.sleep(2.5)
+                if self._state == "error":
+                    self._set_state("idle", "")
+            threading.Thread(target=_auto_clear, daemon=True).start()
             return
 
         if self.cfg.get("hands_free_mode") and mode == "hold":

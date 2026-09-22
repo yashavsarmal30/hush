@@ -42,13 +42,26 @@ def list_input_devices():
     return devices
 
 
+def _get_default_preferred_device():
+    """Find default input device for preferred host API (WASAPI on Windows) or None."""
+    if sys.platform == "win32":
+        try:
+            apis = sd.query_hostapis()
+            wasapi = next((a for a in apis if "wasapi" in a["name"].lower()), None)
+            if wasapi and wasapi.get("default_input_device") is not None and wasapi["default_input_device"] >= 0:
+                return wasapi["default_input_device"]
+        except Exception:
+            pass
+    return None
+
+
 def resolve_device(name_substring):
-    if not name_substring:
-        return None  # system default
+    if not name_substring or name_substring == "System default":
+        return _get_default_preferred_device()
     for idx, name in list_input_devices():
         if name_substring.lower() in name.lower():
             return idx
-    return None
+    return _get_default_preferred_device()
 
 
 def _extra_settings(device):
@@ -58,8 +71,7 @@ def _extra_settings(device):
     here), so asking for our 16 kHz raises "Invalid sample rate [-9997]" — which
     is every device the picker lists, since list_input_devices() is WASAPI-only.
     auto_convert lets PortAudio resample for us. It is rejected on other host
-    APIs, so it is only attached to genuine WASAPI devices (device=None is the
-    PortAudio default, typically MME, which resamples on its own).
+    APIs, so it is only attached to genuine WASAPI devices.
     """
     if sys.platform != "win32":
         return None
@@ -69,16 +81,42 @@ def _extra_settings(device):
         if "wasapi" in api.lower():
             return sd.WasapiSettings(auto_convert=True)
     except Exception:
-        pass  # unknown device: let InputStream raise the real error
+        pass
     return None
 
 
 def open_input_stream(device, callback, blocksize=BLOCK):
-    """A 16 kHz mono float32 input stream, with per-host-API quirks handled."""
-    return sd.InputStream(
-        samplerate=SAMPLE_RATE, channels=1, dtype="float32", blocksize=blocksize,
-        device=device, callback=callback, extra_settings=_extra_settings(device),
-    )
+    """A 16 kHz mono float32 input stream, with per-host-API quirks handled and automatic fallback."""
+    import time
+
+    candidates = [device]
+    default_preferred = _get_default_preferred_device()
+    if default_preferred is not None and default_preferred not in candidates:
+        candidates.append(default_preferred)
+    if None not in candidates:
+        candidates.append(None)
+
+    last_error = None
+    for cand in candidates:
+        for attempt in range(2):
+            try:
+                stream = sd.InputStream(
+                    samplerate=SAMPLE_RATE,
+                    channels=1,
+                    dtype="float32",
+                    blocksize=blocksize,
+                    device=cand,
+                    callback=callback,
+                    extra_settings=_extra_settings(cand),
+                )
+                return stream
+            except Exception as e:
+                last_error = e
+                time.sleep(0.08)
+
+    if last_error:
+        raise last_error
+    raise RuntimeError("No input device could be opened")
 
 
 class Recorder:
@@ -92,34 +130,33 @@ class Recorder:
         self._chunks = []
         self._samples = 0
         self._lock = threading.Lock()
+        self._stream_lock = threading.RLock()
 
     def open(self, device=None):
-        """(Re)open the warm stream. Safe to call again with the same device.
-
-        A stream that has gone inactive (device unplugged, or the endpoint reset
-        under us) is reopened rather than kept: PortAudio does not resurrect it,
-        and holding it would silently capture nothing until the app restarts.
-        """
-        if self._stream is not None and device == self._device and self._stream.active:
-            return
-        self.close()
-        self._stream = open_input_stream(device, self._callback)
-        self._stream.start()
-        self._device = device
+        """(Re)open the warm stream with thread safety and idempotence."""
+        with self._stream_lock:
+            if self._stream is not None and device == self._device and self._stream.active:
+                return
+            self.close()
+            self._stream = open_input_stream(device, self._callback)
+            self._stream.start()
+            self._device = device
 
     def close(self):
-        if self._stream is not None:
-            try:
-                self._stream.stop()
-                self._stream.close()
-            except Exception:
-                pass
-            self._stream = None
-            self._device = "unset"
+        with self._stream_lock:
+            if self._stream is not None:
+                try:
+                    self._stream.stop()
+                    self._stream.close()
+                except Exception:
+                    pass
+                self._stream = None
+                self._device = "unset"
 
     @property
     def ready(self):
-        return self._stream is not None and self._stream.active
+        with self._stream_lock:
+            return self._stream is not None and self._stream.active
 
     def _callback(self, indata, frames, time_info, status):
         if not self._capturing:
@@ -134,12 +171,13 @@ class Recorder:
             self.on_level(min(1.0, rms * 18.0))
 
     def begin(self, device=None):
-        """Start keeping audio. Opens the stream first if needed (cold path)."""
-        self.open(device)
-        with self._lock:
-            self._chunks = []
-            self._samples = 0
-            self._capturing = True
+        """Start keeping audio. Opens the stream first if needed with stream lock."""
+        with self._stream_lock:
+            self.open(device)
+            with self._lock:
+                self._chunks = []
+                self._samples = 0
+                self._capturing = True
 
     @property
     def sample_count(self):

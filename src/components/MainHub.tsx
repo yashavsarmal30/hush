@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Mic, History, BookA, Cpu, Keyboard, Settings, ShieldCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Header } from "@/components/Header";
@@ -17,6 +17,13 @@ interface MainHubProps {
 
 export function MainHub({ hush }: MainHubProps) {
   const [activeTab, setActiveTab] = useState("dictation");
+  const [appVersion, setAppVersion] = useState("1.0.3");
+
+  useEffect(() => {
+    window.electronAPI?.getAppVersion?.().then((v) => {
+      if (v) setAppVersion(v);
+    }).catch(() => {});
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-neutral-950 text-neutral-100 overflow-hidden select-none">
@@ -156,7 +163,7 @@ export function MainHub({ hush }: MainHubProps) {
       {/* Subtle Footer Bar */}
       <footer className="px-6 py-2 border-t border-white/5 flex items-center justify-between text-[11px] text-neutral-500 bg-neutral-950/60">
         <div className="flex items-center gap-3">
-          <span>Hush v1.0.1</span>
+          <span>Hush v{appVersion}</span>
           <span>·</span>
           <span>OpenVINO Whisper int8</span>
           <span>·</span>
