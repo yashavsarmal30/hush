@@ -79,10 +79,10 @@ export function OverlayPill({
     <div className="flex items-center justify-center p-0 m-0 select-none bg-transparent">
       <div
         className={cn(
-          "glass-pill draggable-region flex items-center gap-3 px-3.5 py-1.5 rounded-full transition-all duration-300 ease-out shadow-2xl",
-          state === "listening" && "border-white/30 px-4 ring-1 ring-white/10",
-          state === "error" && "border-red-500/30",
-          state === "inserted" && "border-emerald-500/30"
+          "glass-pill draggable-region flex items-center gap-3 px-3.5 py-1.5 rounded-full transition-all duration-200 ease-out shadow-2xl",
+          state === "listening" && "border-red-500/30 bg-[#131316]",
+          state === "error" && "border-red-500/40",
+          state === "inserted" && "border-emerald-500/40"
         )}
       >
         {/* State: LISTENING */}

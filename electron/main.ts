@@ -215,7 +215,6 @@ function createOverlayWindow() {
     x,
     y,
     frame: false,
-    thickFrame: false,
     transparent: true,
     backgroundColor: "#00000000",
     alwaysOnTop: true,
@@ -223,10 +222,6 @@ function createOverlayWindow() {
     hasShadow: false,
     resizable: false,
     focusable: false,
-    type: "toolbar",
-    titleBarStyle: "hidden",
-    roundedCorners: false,
-    title: "",
     icon: getAppIconPath(),
     show: false,
     webPreferences: {

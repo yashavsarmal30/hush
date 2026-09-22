@@ -44,7 +44,10 @@ export function App() {
 
   if (overlay) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center p-0 m-0 overflow-hidden bg-transparent select-none">
+      <div
+        className="w-screen h-screen flex items-center justify-center p-0 m-0 overflow-hidden select-none"
+        style={{ background: "transparent", backgroundColor: "transparent" }}
+      >
         <OverlayPill
           state={hush.state}
           stateMessage={hush.stateMessage}
