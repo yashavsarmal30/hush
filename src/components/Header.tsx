@@ -1,5 +1,5 @@
-import React from "react";
-import { Mic, Radio, Minus, Square, X, Volume2, ShieldCheck } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Mic, Radio, Minus, Square, X, Volume2, ShieldCheck, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,28 @@ export function Header({
   onToggleDictation,
   onToggleHandsFree,
 }: HeaderProps) {
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [updateReady, setUpdateReady] = useState(false);
+
+  useEffect(() => {
+    const api = (window as any).electronAPI;
+    if (api?.onUpdateAvailable) {
+      api.onUpdateAvailable((version: string) => {
+        setUpdateVersion(version);
+      });
+    }
+    if (api?.onUpdateDownloaded) {
+      api.onUpdateDownloaded((version: string) => {
+        setUpdateVersion(version);
+        setUpdateReady(true);
+      });
+    }
+  }, []);
+
+  const handleInstallUpdate = () => {
+    (window as any).electronAPI?.installUpdate?.();
+  };
+
   const handleMinimize = () => {
     (window as any).electronAPI?.minimize();
   };
@@ -115,8 +137,25 @@ export function Header({
         </Button>
       </div>
 
-      {/* Right controls: Privacy badge + Window controls */}
+      {/* Right controls: Privacy badge + Update Button + Window controls */}
       <div className="flex items-center gap-2 non-draggable-region">
+        {updateReady ? (
+          <Button
+            onClick={handleInstallUpdate}
+            size="sm"
+            className="relative z-10 cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1 rounded-full gap-1.5 animate-pulse shadow-md"
+            title="Update downloaded! Click to restart and install"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Install Update</span>
+          </Button>
+        ) : updateVersion ? (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-medium animate-pulse">
+            <Download className="w-3 h-3 animate-bounce" />
+            <span>Downloading v{updateVersion}…</span>
+          </div>
+        ) : null}
+
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-medium border border-emerald-500/20 mr-2">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>Private</span>

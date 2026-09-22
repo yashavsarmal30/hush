@@ -4,6 +4,11 @@
   "directories": {
     "output": "dist-package"
   },
+  "publish": {
+    "provider": "github",
+    "owner": "yashavsarmal30",
+    "repo": "hush"
+  },
   "files": [
     "dist-app/**/*",
     "dist-electron/**/*",

@@ -12,6 +12,7 @@ import path from "path";
 import { spawn, ChildProcess } from "child_process";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { autoUpdater } from "electron-updater";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -307,6 +308,14 @@ ipcMain.on("set:autostart", (_event, enabled: boolean) => {
   });
 });
 
+ipcMain.on("update:check", () => {
+  if (!isDev) autoUpdater.checkForUpdates().catch(() => {});
+});
+
+ipcMain.on("update:install", () => {
+  autoUpdater.quitAndInstall();
+});
+
 let isQuitting = false;
 
 app.whenReady().then(() => {
@@ -314,6 +323,20 @@ app.whenReady().then(() => {
   createMainWindow();
   createOverlayWindow();
   createTray();
+
+  if (!isDev) {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.on("update-available", (info) => {
+      mainWindow?.webContents.send("update:available", info.version);
+    });
+    autoUpdater.on("update-downloaded", (info) => {
+      mainWindow?.webContents.send("update:downloaded", info.version);
+    });
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(() => {});
+    }, 4000);
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
