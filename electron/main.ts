@@ -52,44 +52,48 @@ function getAppIconPath(): string {
   return pngPath;
 }
 
-function startPythonService() {
-  const root = getAppRoot();
-  let pythonCmd = "";
-  let args: string[] = [];
+process.on("uncaughtException", (err) => {
+  console.error("[Hush] Uncaught exception in main process:", err);
+});
 
-  if (isDev) {
-    const venvPython = path.join(root, ".venv", "Scripts", "python.exe");
-    if (fs.existsSync(venvPython)) {
-      pythonCmd = venvPython;
-    } else {
-      pythonCmd = "python";
-    }
-    args = ["-m", "hush.service"];
-  } else {
-    // Production packaged engine
-    const candidates = [
-      path.join(process.resourcesPath, "engine", "hush-engine.exe"),
-      path.join(process.resourcesPath, "hush-engine.exe"),
-      path.join(root, "dist", "hush-engine", "hush-engine.exe"),
-      path.join(root, "hush-engine.exe"),
-    ];
-    const found = candidates.find((c) => fs.existsSync(c));
-    if (found) {
-      pythonCmd = found;
-      args = [];
-    } else {
-      const venvPython = path.join(root, ".venv", "Scripts", "python.exe");
-      pythonCmd = fs.existsSync(venvPython) ? venvPython : "python";
-      args = ["-m", "hush.service"];
-    }
+function findPython(): { cmd: string; args: string[] } {
+  const root = getAppRoot();
+  const engineCandidates = [
+    path.join(process.resourcesPath, "engine", "hush-engine.exe"),
+    path.join(process.resourcesPath, "hush-engine.exe"),
+    path.join(root, "dist", "hush-engine", "hush-engine.exe"),
+    path.join(root, "hush-engine.exe"),
+  ];
+  const engine = engineCandidates.find((c) => fs.existsSync(c));
+  if (engine) return { cmd: engine, args: [] };
+
+  const venv = path.join(root, ".venv", "Scripts", "python.exe");
+  if (fs.existsSync(venv)) return { cmd: venv, args: ["-m", "hush.service"] };
+
+  const localApp = process.env.LOCALAPPDATA || "";
+  for (const v of ["Python313", "Python312", "Python311", "Python310"]) {
+    const p = path.join(localApp, "Programs", "Python", v, "python.exe");
+    if (fs.existsSync(p)) return { cmd: p, args: ["-m", "hush.service"] };
   }
 
-  console.log(`[Hush] Launching Python backend: ${pythonCmd} ${args.join(" ")}`);
+  return { cmd: "python", args: ["-m", "hush.service"] };
+}
+
+function startPythonService() {
+  const root = getAppRoot();
+  const py = findPython();
+
+  console.log(`[Hush] Launching Python backend: ${py.cmd} ${py.args.join(" ")}`);
   try {
-    pythonProcess = spawn(pythonCmd, args, {
+    pythonProcess = spawn(py.cmd, py.args, {
       cwd: root,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    pythonProcess.on("error", (err) => {
+      console.error("[Hush] Python process error:", err.message);
+      pythonProcess = null;
     });
 
     pythonProcess.stdout?.on("data", (data) => {
@@ -105,8 +109,8 @@ function startPythonService() {
       console.log(`[Python] exited with code ${code}`);
       pythonProcess = null;
     });
-  } catch (err) {
-    console.error("[Hush] Failed to spawn Python service:", err);
+  } catch (err: any) {
+    console.error("[Hush] Failed to spawn Python service:", err.message);
   }
 }
 
