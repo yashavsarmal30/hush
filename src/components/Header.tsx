@@ -30,63 +30,99 @@ export function Header({
   onToggleDictation,
   onToggleHandsFree,
 }: HeaderProps) {
+  const [currentVersion, setCurrentVersion] = useState<string>("1.0.3");
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   useEffect(() => {
-    const api = (window as any).electronAPI;
-    if (api?.onUpdateAvailable) {
-      api.onUpdateAvailable((version: string) => {
-        setUpdateVersion(version);
-        setCheckingUpdate(false);
+    const api = window.electronAPI;
+    if (!api) return;
+
+    api.getAppVersion?.().then((v) => {
+      if (v) setCurrentVersion(v);
+    }).catch(() => {});
+
+    api.onUpdateChecking?.(() => {
+      setCheckingUpdate(true);
+    });
+
+    api.onUpdateAvailable?.((data: any) => {
+      const v = typeof data === "string" ? data : data?.version;
+      setUpdateVersion(v);
+      setCheckingUpdate(false);
+      setDownloadProgress(0);
+      toast.info(`New version v${v} found! Downloading in background…`);
+    });
+
+    api.onUpdateProgress?.((progress: any) => {
+      const pct = Math.round(progress?.percent || 0);
+      setDownloadProgress(pct);
+    });
+
+    api.onUpdateDownloaded?.((data: any) => {
+      const v = typeof data === "string" ? data : data?.version;
+      setUpdateVersion(v);
+      setDownloadProgress(100);
+      setUpdateReady(true);
+      setCheckingUpdate(false);
+      toast.success(`Update v${v} downloaded and ready to install!`, {
+        action: {
+          label: "Install Now",
+          onClick: () => api.installUpdate(),
+        },
+        duration: 10000,
       });
-    }
-    if (api?.onUpdateDownloaded) {
-      api.onUpdateDownloaded((version: string) => {
-        setUpdateVersion(version);
-        setUpdateReady(true);
-        setCheckingUpdate(false);
-        toast.success(`Update v${version} downloaded! Click Install Update to apply.`);
+    });
+
+    api.onUpdateNotAvailable?.((info: any) => {
+      setCheckingUpdate(false);
+      setDownloadProgress(null);
+      const v = info?.currentVersion || currentVersion;
+      toast.info(`Hush is up to date (v${v})`);
+    });
+
+    api.onUpdateError?.((err: string) => {
+      setCheckingUpdate(false);
+      setDownloadProgress(null);
+      console.error("[Hush] Update check error:", err);
+      toast.error(`Update check failed: ${err}`, {
+        action: {
+          label: "Download Manually",
+          onClick: () => {
+            window.electronAPI?.openExternal?.("https://github.com/yashavsarmal30/hush/releases/latest");
+          },
+        },
+        duration: 8000,
       });
-    }
-    if (api?.onUpdateNotAvailable) {
-      api.onUpdateNotAvailable(() => {
-        setCheckingUpdate(false);
-        toast.info("Hush is up to date (v1.0.1)");
-      });
-    }
-    if (api?.onUpdateError) {
-      api.onUpdateError((err: string) => {
-        setCheckingUpdate(false);
-      });
-    }
-  }, []);
+    });
+  }, [currentVersion]);
 
   const handleCheckUpdate = () => {
     setCheckingUpdate(true);
     toast.info("Checking for updates…");
-    const api = (window as any).electronAPI;
+    const api = window.electronAPI;
     if (api?.checkUpdate) {
       api.checkUpdate();
     } else {
       setTimeout(() => {
         setCheckingUpdate(false);
-        toast.info("Hush is up to date (v1.0.2)");
+        toast.info(`Hush is up to date (v${currentVersion})`);
       }, 800);
     }
   };
 
   const handleInstallUpdate = () => {
-    (window as any).electronAPI?.installUpdate?.();
+    window.electronAPI?.installUpdate?.();
   };
 
   const handleMinimize = () => {
-    (window as any).electronAPI?.minimize();
+    window.electronAPI?.minimize();
   };
 
   const handleClose = () => {
-    (window as any).electronAPI?.close();
+    window.electronAPI?.close();
   };
 
   return (
@@ -189,16 +225,19 @@ export function Header({
           <Button
             onClick={handleInstallUpdate}
             size="sm"
-            className="relative z-10 cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1 rounded-full gap-1.5 animate-pulse shadow-md"
+            className="relative z-10 cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-1 rounded-full gap-1.5 animate-pulse shadow-md"
             title="Update downloaded! Click to restart and install"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Install Update</span>
+            <span>Install v{updateVersion}</span>
           </Button>
         ) : updateVersion ? (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-medium animate-pulse">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-medium">
             <Download className="w-3 h-3 animate-bounce" />
-            <span>Downloading v{updateVersion}…</span>
+            <span>
+              Downloading v{updateVersion}
+              {downloadProgress !== null ? ` (${downloadProgress}%)` : "…"}
+            </span>
           </div>
         ) : (
           <Button
@@ -207,7 +246,7 @@ export function Header({
             variant="outline"
             disabled={checkingUpdate}
             className="relative z-10 cursor-pointer border-white/10 hover:border-white/20 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium px-3 py-1 rounded-full gap-1.5 transition-all shadow-sm"
-            title="Check for updates / Install latest update"
+            title="Check for updates from GitHub"
           >
             <RefreshCw className={cn("w-3 h-3", checkingUpdate && "animate-spin")} />
             <span>{checkingUpdate ? "Checking…" : "Check for Updates"}</span>

@@ -26,9 +26,13 @@ export function PreferencesTab({
   onStopMeter,
   onPlaySound,
 }: PreferencesTabProps) {
+  const [currentVersion, setCurrentVersion] = useState<string>("1.0.3");
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [downloadSpeed, setDownloadSpeed] = useState<string | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   // Start mic meter while preferences tab is mounted
   useEffect(() => {
@@ -39,48 +43,82 @@ export function PreferencesTab({
   }, [onStartMeter, onStopMeter]);
 
   useEffect(() => {
-    const api = (window as any).electronAPI;
-    if (api?.onUpdateAvailable) {
-      api.onUpdateAvailable((version: string) => {
-        setUpdateVersion(version);
-        setCheckingUpdate(false);
-      });
-    }
-    if (api?.onUpdateDownloaded) {
-      api.onUpdateDownloaded((version: string) => {
-        setUpdateVersion(version);
-        setUpdateReady(true);
-        setCheckingUpdate(false);
-      });
-    }
-    if (api?.onUpdateNotAvailable) {
-      api.onUpdateNotAvailable(() => {
-        setCheckingUpdate(false);
-      });
-    }
-    if (api?.onUpdateError) {
-      api.onUpdateError(() => {
-        setCheckingUpdate(false);
-      });
-    }
-  }, []);
+    const api = window.electronAPI;
+    if (!api) return;
+
+    api.getAppVersion?.().then((v) => {
+      if (v) setCurrentVersion(v);
+    }).catch(() => {});
+
+    api.onUpdateChecking?.(() => {
+      setCheckingUpdate(true);
+      setUpdateError(null);
+    });
+
+    api.onUpdateAvailable?.((data: any) => {
+      const v = typeof data === "string" ? data : data?.version;
+      setUpdateVersion(v);
+      setCheckingUpdate(false);
+      setDownloadProgress(0);
+      setUpdateError(null);
+    });
+
+    api.onUpdateProgress?.((progress: any) => {
+      const pct = Math.round(progress?.percent || 0);
+      setDownloadProgress(pct);
+      if (progress?.bytesPerSecond) {
+        const mbps = (progress.bytesPerSecond / (1024 * 1024)).toFixed(1);
+        setDownloadSpeed(`${mbps} MB/s`);
+      }
+    });
+
+    api.onUpdateDownloaded?.((data: any) => {
+      const v = typeof data === "string" ? data : data?.version;
+      setUpdateVersion(v);
+      setDownloadProgress(100);
+      setUpdateReady(true);
+      setCheckingUpdate(false);
+      setUpdateError(null);
+      toast.success(`Update v${v} downloaded! Click Install Update to apply.`);
+    });
+
+    api.onUpdateNotAvailable?.((info: any) => {
+      setCheckingUpdate(false);
+      setDownloadProgress(null);
+      setUpdateError(null);
+      const v = info?.currentVersion || currentVersion;
+      toast.info(`Hush is up to date (v${v})`);
+    });
+
+    api.onUpdateError?.((err: string) => {
+      setCheckingUpdate(false);
+      setDownloadProgress(null);
+      setUpdateError(err);
+      toast.error(`Update check failed: ${err}`);
+    });
+  }, [currentVersion]);
 
   const handleCheckUpdate = () => {
     setCheckingUpdate(true);
+    setUpdateError(null);
     toast.info("Checking for updates…");
-    const api = (window as any).electronAPI;
+    const api = window.electronAPI;
     if (api?.checkUpdate) {
       api.checkUpdate();
     } else {
       setTimeout(() => {
         setCheckingUpdate(false);
-        toast.info("Hush is up to date (v1.0.2)");
+        toast.info(`Hush is up to date (v${currentVersion})`);
       }, 800);
     }
   };
 
   const handleInstallUpdate = () => {
-    (window as any).electronAPI?.installUpdate?.();
+    window.electronAPI?.installUpdate?.();
+  };
+
+  const handleOpenReleases = () => {
+    window.electronAPI?.openExternal?.("https://github.com/yashavsarmal30/hush/releases/latest");
   };
 
   const handleOpenDataDir = () => {
@@ -289,42 +327,101 @@ export function PreferencesTab({
       </Card>
 
       {/* Software Updates Card */}
-      <Card className="p-4 bg-neutral-900/60 border-white/5 rounded-2xl flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-white">Software Updates</p>
-          <p className="text-[11px] text-neutral-400">
-            Hush automatically checks for updates on launch. Current version: v1.0.2.
-          </p>
+      <Card className="p-4 bg-neutral-900/60 border-white/5 rounded-2xl space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-white">Software Updates</p>
+            <p className="text-[11px] text-neutral-400">
+              Installed version: <span className="font-mono text-neutral-200">v{currentVersion}</span>
+              {updateVersion && !updateReady && (
+                <span className="text-blue-400 ml-2 font-medium">
+                  • Update v{updateVersion} available
+                </span>
+              )}
+              {updateReady && (
+                <span className="text-emerald-400 ml-2 font-medium">
+                  • Update v{updateVersion} ready to install
+                </span>
+              )}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {updateReady ? (
+              <Button
+                size="sm"
+                onClick={handleInstallUpdate}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 text-xs rounded-full font-semibold shadow-md animate-pulse cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Install v{updateVersion} Now</span>
+              </Button>
+            ) : updateVersion ? (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-medium border border-blue-500/30">
+                <Download className="w-3.5 h-3.5 animate-bounce" />
+                <span>
+                  Downloading v{updateVersion}
+                  {downloadProgress !== null ? ` (${downloadProgress}%)` : "…"}
+                </span>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCheckUpdate}
+                disabled={checkingUpdate}
+                className="gap-2 text-xs rounded-full border-white/10 hover:bg-neutral-800 cursor-pointer"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", checkingUpdate && "animate-spin")} />
+                <span>{checkingUpdate ? "Checking…" : "Check for Updates"}</span>
+              </Button>
+            )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenReleases}
+              className="gap-1.5 text-xs rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 cursor-pointer text-[11px]"
+              title="Open GitHub Releases in browser"
+            >
+              <Download className="w-3 h-3" />
+              <span>GitHub</span>
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {updateReady ? (
-            <Button
-              size="sm"
-              onClick={handleInstallUpdate}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 text-xs rounded-full font-semibold shadow-md animate-pulse cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Install Update Now</span>
-            </Button>
-          ) : updateVersion ? (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-medium border border-blue-500/30">
-              <Download className="w-3.5 h-3.5 animate-bounce" />
-              <span>Downloading v{updateVersion}…</span>
+        {/* Live download progress bar */}
+        {updateVersion && downloadProgress !== null && !updateReady && (
+          <div className="space-y-1 pt-1 border-t border-white/5">
+            <div className="flex justify-between text-[11px] text-neutral-400 font-medium">
+              <span>Downloading update files…</span>
+              <span>
+                {downloadProgress}% {downloadSpeed ? `(${downloadSpeed})` : ""}
+              </span>
             </div>
-          ) : (
+            <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 transition-all duration-150 rounded-full"
+                style={{ width: `${Math.min(100, downloadProgress)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Error notice if update check/download failed */}
+        {updateError && (
+          <div className="flex items-center justify-between text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+            <span>Update error: {updateError}</span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              onClick={handleCheckUpdate}
-              disabled={checkingUpdate}
-              className="gap-2 text-xs rounded-full border-white/10 hover:bg-neutral-800 cursor-pointer"
+              onClick={handleOpenReleases}
+              className="h-6 text-[10px] text-red-300 hover:text-white underline p-0"
             >
-              <RefreshCw className={cn("w-3.5 h-3.5", checkingUpdate && "animate-spin")} />
-              <span>{checkingUpdate ? "Checking…" : "Check for Updates"}</span>
+              Download installer directly
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </Card>
 
       {/* System Actions Card */}

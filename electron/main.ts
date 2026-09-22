@@ -343,26 +343,108 @@ ipcMain.on("open:data-folder", () => {
   }
 });
 
+ipcMain.on("open:external", (_event, url: string) => {
+  if (url && (url.startsWith("https://") || url.startsWith("http://"))) {
+    shell.openExternal(url);
+  }
+});
+
 ipcMain.on("set:autostart", (_event, enabled: boolean) => {
   app.setLoginItemSettings({
     openAtLogin: enabled,
   });
 });
 
-ipcMain.on("update:check", () => {
-  if (!isDev) {
-    autoUpdater.checkForUpdates().catch((err: any) => {
-      mainWindow?.webContents.send("update:error", err?.message || String(err));
+ipcMain.handle("app:version", () => {
+  return app.getVersion();
+});
+
+function initAutoUpdater() {
+  autoUpdater.logger = console;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.forceDevUpdateConfig = true;
+
+  try {
+    autoUpdater.setFeedURL({
+      provider: "github",
+      owner: "yashavsarmal30",
+      repo: "hush",
     });
-  } else {
-    setTimeout(() => {
-      mainWindow?.webContents.send("update:not-available");
-    }, 800);
+  } catch (e) {
+    console.error("[Hush] Failed to set update feed URL:", e);
+  }
+
+  autoUpdater.on("checking-for-update", () => {
+    console.log("[Hush] Checking for software update...");
+    mainWindow?.webContents.send("update:checking");
+  });
+
+  autoUpdater.on("update-available", (info: any) => {
+    console.log("[Hush] Update available:", info?.version);
+    mainWindow?.webContents.send("update:available", {
+      version: info?.version,
+      releaseDate: info?.releaseDate,
+      releaseNotes: info?.releaseNotes,
+    });
+  });
+
+  autoUpdater.on("download-progress", (progress: any) => {
+    const pct = progress?.percent || 0;
+    console.log(`[Hush] Download progress: ${Math.round(pct)}%`);
+    mainWindow?.webContents.send("update:progress", {
+      percent: pct,
+      bytesPerSecond: progress?.bytesPerSecond || 0,
+      transferred: progress?.transferred || 0,
+      total: progress?.total || 0,
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info: any) => {
+    console.log("[Hush] Update successfully downloaded:", info?.version);
+    mainWindow?.webContents.send("update:downloaded", {
+      version: info?.version,
+      releaseDate: info?.releaseDate,
+    });
+  });
+
+  autoUpdater.on("update-not-available", (info: any) => {
+    console.log("[Hush] Update not available. Already on latest version:", app.getVersion());
+    mainWindow?.webContents.send("update:not-available", {
+      currentVersion: app.getVersion(),
+      latestVersion: info?.version || app.getVersion(),
+    });
+  });
+
+  autoUpdater.on("error", (err: any) => {
+    console.error("[Hush] autoUpdater encountered error:", err);
+    mainWindow?.webContents.send("update:error", err?.message || String(err));
+  });
+}
+
+ipcMain.on("update:check", async () => {
+  console.log("[Hush] Received manual update:check");
+  mainWindow?.webContents.send("update:checking");
+  try {
+    const checkResult = await autoUpdater.checkForUpdates();
+    console.log("[Hush] checkForUpdates finished, updateInfo:", checkResult?.updateInfo?.version);
+  } catch (err: any) {
+    console.error("[Hush] checkForUpdates error:", err);
+    mainWindow?.webContents.send("update:error", err?.message || String(err));
   }
 });
 
 ipcMain.on("update:install", () => {
-  autoUpdater.quitAndInstall();
+  console.log("[Hush] User requested update:install. Terminating engine and installing...");
+  isQuitting = true;
+  if (pythonProcess) {
+    try {
+      pythonProcess.kill("SIGTERM");
+    } catch {}
+    pythonProcess = null;
+  }
+  // isSilent = false (show installer), isForceRunAfter = true (relaunch app)
+  autoUpdater.quitAndInstall(false, true);
 });
 
 ipcMain.on("engine:restart", () => {
@@ -377,25 +459,14 @@ app.whenReady().then(() => {
   createOverlayWindow();
   createTray();
 
-  if (!isDev) {
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
-    autoUpdater.on("update-available", (info: any) => {
-      mainWindow?.webContents.send("update:available", info.version);
+  initAutoUpdater();
+  // Auto-check on launch after 3 seconds
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((err: any) => {
+      console.log("[Hush] Background initial update check note:", err?.message || err);
     });
-    autoUpdater.on("update-downloaded", (info: any) => {
-      mainWindow?.webContents.send("update:downloaded", info.version);
-    });
-    autoUpdater.on("update-not-available", () => {
-      mainWindow?.webContents.send("update:not-available");
-    });
-    autoUpdater.on("error", (err: any) => {
-      mainWindow?.webContents.send("update:error", err?.message || String(err));
-    });
-    setTimeout(() => {
-      autoUpdater.checkForUpdates().catch(() => {});
-    }, 4000);
-  }
+  }, 3000);
+
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
